@@ -7,7 +7,7 @@ let cajero: string;
 let admin: string;
 
 beforeAll(async () => {
-  await resetDb({ minimal: false });
+  await resetDb({ minimal: false, dtes: false });
   cajero = await login('cajero');
   admin = await login('admin');
 });

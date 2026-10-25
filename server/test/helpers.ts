@@ -6,7 +6,7 @@ import { seedAll } from '../db/seed/index.js';
 
 export const app = createApp();
 
-export async function resetDb(opts: { minimal?: boolean } = { minimal: true }) {
+export async function resetDb(opts: { minimal?: boolean; dtes?: boolean } = { minimal: true }) {
   return seedAll(db, opts);
 }
 

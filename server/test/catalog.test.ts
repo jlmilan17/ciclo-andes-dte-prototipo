@@ -8,7 +8,7 @@ let cajero: string;
 let seed: Awaited<ReturnType<typeof resetDb>>;
 
 beforeAll(async () => {
-  seed = await resetDb({ minimal: false });
+  seed = await resetDb({ minimal: false, dtes: false });
   admin = await login('admin');
   cajero = await login('cajero');
 });

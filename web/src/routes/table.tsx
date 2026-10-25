@@ -7,6 +7,8 @@ import { Placeholder } from '@/pages/Placeholder';
 import { AperturaCaja } from '@/pages/caja/AperturaCaja';
 import { Contingencia } from '@/pages/contingencia/Contingencia';
 import { Correos } from '@/pages/correos/Correos';
+import { DteDetalle } from '@/pages/dte/DteDetalle';
+import { Historial } from '@/pages/dte/Historial';
 import { Pos } from '@/pages/pos/Pos';
 import { VentaResultado } from '@/pages/pos/VentaResultado';
 import { AcercaSimulacion } from '@/pages/sim/AcercaSimulacion';
@@ -27,7 +29,8 @@ export const ROUTES: AppRoute[] = [
   { path: '/catalogo', roles: ADMIN, element: <Catalogo /> },
   { path: '/clientes', roles: ALL, element: <Clientes /> },
   { path: '/clientes/:id', roles: ALL, element: <ClienteFicha /> },
-  { path: '/dte', roles: ALL, element: <Placeholder title="Historial de DTE" /> },
+  { path: '/dte', roles: ALL, element: <Historial /> },
+  { path: '/dte/:id', roles: ALL, element: <DteDetalle /> },
   { path: '/contingencia', roles: ALL, element: <Contingencia /> },
   { path: '/usuarios', roles: ADMIN, element: <Placeholder title="Usuarios y roles" /> },
   { path: '/consola-mh', roles: ALL, element: <ConsolaMh /> },

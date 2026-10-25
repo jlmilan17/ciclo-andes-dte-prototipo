@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db/database.js';
-import { emitirVenta } from '../dte/pipeline.js';
+import { evaluarInvalidable, invalidarDte } from '../dte/invalidacion.js';
+import { corregirDte, emitirVenta } from '../dte/pipeline.js';
 import { loadDte } from '../dte/repo.js';
 import { audit } from '../lib/audit.js';
 import { notFound } from '../lib/errors.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
+import { decodeJws } from '../dte/signer.js';
+import { cents } from '../lib/sql.js';
+import { sql } from 'kysely';
 import { dtePdf } from '../pdf/dtePdf.js';
 import { ticketPdf } from '../pdf/ticketPdf.js';
 
@@ -50,6 +54,71 @@ dteRouter.post('/ventas', requireAuth, async (req, res) => {
   res.status(201).json(r);
 });
 
+/** Historial de DTE con filtros reales y paginación (25). */
+dteRouter.get('/dte', requireAuth, async (req, res) => {
+  const f = z
+    .object({
+      page: z.coerce.number().int().min(1).default(1),
+      q: z.string().trim().optional(),
+      tipo: z.enum(['01', '03', '05']).optional(),
+      estado: z
+        .enum([
+          'BORRADOR',
+          'FIRMADO',
+          'ENCOLADO',
+          'TRANSMITIDO',
+          'PROCESADO',
+          'RECHAZADO',
+          'INVALIDADO',
+        ])
+        .optional(),
+      desde: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+      hasta: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    })
+    .parse(req.query);
+  let q = db.selectFrom('dte as d');
+  if (f.q) {
+    const like = `%${f.q.toLowerCase()}%`;
+    q = q.where((eb) =>
+      eb.or([
+        eb(sql`lower(d.numero_control)`, 'like', like),
+        eb(sql`lower(d.codigo_generacion)`, 'like', like),
+        eb(sql`lower(d.receptor->>'razon_social')`, 'like', like),
+      ]),
+    );
+  }
+  if (f.tipo) q = q.where('d.tipo', '=', f.tipo);
+  if (f.estado) q = q.where('d.estado', '=', f.estado);
+  if (f.desde)
+    q = q.where(sql`(d.emitido_at AT TIME ZONE 'America/El_Salvador')::date`, '>=', f.desde);
+  if (f.hasta)
+    q = q.where(sql`(d.emitido_at AT TIME ZONE 'America/El_Salvador')::date`, '<=', f.hasta);
+  const total = await q.select(db.fn.countAll<number>().as('n')).executeTakeFirstOrThrow();
+  const items = await q
+    .select([
+      'd.id',
+      'd.tipo',
+      'd.numero_control',
+      'd.codigo_generacion',
+      'd.estado',
+      'd.emitido_at',
+      'd.receptor',
+      'd.sello_recepcion',
+      cents('d.total').as('total'),
+    ])
+    .orderBy('d.emitido_at', 'desc')
+    .limit(25)
+    .offset((f.page - 1) * 25)
+    .execute();
+  res.json({ items, total: Number(total.n), page: f.page, pageSize: 25 });
+});
+
 dteRouter.get('/dte/:id', requireAuth, async (req, res) => {
   const d = await loadDte(String(req.params.id));
   const eventos = await db
@@ -58,7 +127,91 @@ dteRouter.get('/dte/:id', requireAuth, async (req, res) => {
     .where('dte_id', '=', d.id)
     .orderBy('id')
     .execute();
-  res.json({ ...d, eventos });
+  const invalidacion = await db
+    .selectFrom('evento_invalidacion as e')
+    .innerJoin('motivo_invalidacion as m', 'm.id', 'e.motivo_id')
+    .innerJoin('usuario as u', 'u.id', 'e.responsable_id')
+    .select([
+      'e.codigo_generacion',
+      'e.json',
+      'e.jws',
+      'e.sello',
+      'e.observaciones',
+      'e.respuesta_mh',
+      'e.created_at',
+      'm.descripcion as motivo',
+      'u.nombre as responsable',
+    ])
+    .where('e.dte_id', '=', d.id)
+    .executeTakeFirst();
+  const notasCredito = await db
+    .selectFrom('dte')
+    .select(['id', 'numero_control', 'estado', 'emitido_at', cents('total').as('total')])
+    .where('referenced_dte_id', '=', d.id)
+    .where('tipo', '=', '05')
+    .orderBy('emitido_at')
+    .execute();
+  const correccion = await db
+    .selectFrom('dte')
+    .select(['id', 'numero_control', 'estado'])
+    .where('corrige_dte_id', '=', d.id)
+    .executeTakeFirst();
+  res.json({
+    ...d,
+    eventos,
+    invalidacion: invalidacion ?? null,
+    invalidable: await evaluarInvalidable(d.id),
+    notasCredito,
+    correccion: correccion ?? null,
+  });
+});
+
+/** Pestaña "Firma": encabezado, carga útil y firma del JWS decodificados. */
+dteRouter.get('/dte/:id/firma', requireAuth, async (req, res) => {
+  const d = await db
+    .selectFrom('dte')
+    .select(['jws'])
+    .where('id', '=', req.params.id)
+    .executeTakeFirst();
+  if (!d) throw notFound('DTE');
+  if (!d.jws) {
+    res.json(null);
+    return;
+  }
+  res.json({ jws: d.jws, ...decodeJws(d.jws) });
+});
+
+dteRouter.get('/motivos-invalidacion', requireAuth, async (_req, res) => {
+  res.json(await db.selectFrom('motivo_invalidacion').selectAll().orderBy('id').execute());
+});
+
+/** SRS-REQ-DTE-005: solo Administrador (RNF-INV-01). */
+dteRouter.post('/dte/:id/invalidar', requireAuth, requireAdmin, async (req, res) => {
+  const b = z
+    .object({
+      motivo_id: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+      observaciones: z.string().trim().max(500).nullish(),
+    })
+    .parse(req.body);
+  res.json(
+    await invalidarDte(String(req.params.id), b.motivo_id, b.observaciones ?? null, req.user!),
+  );
+});
+
+/** DTE rechazado: corregir y reenviar como documento nuevo (ZG-16). */
+dteRouter.post('/dte/:id/corregir', requireAuth, async (req, res) => {
+  const { cliente_id } = z
+    .object({ cliente_id: z.string().uuid().nullish() })
+    .parse(req.body ?? {});
+  const r = await corregirDte(String(req.params.id), cliente_id, req.user!);
+  await audit({
+    usuarioId: req.user!.id,
+    accion: 'DTE_CORREGIDO',
+    entidad: 'dte',
+    entidadId: String(req.params.id),
+    detalle: { nuevo: r.dte.numeroControl },
+  });
+  res.status(201).json(r);
 });
 
 dteRouter.get('/dte/:id/json', requireAuth, async (req, res) => {
