@@ -48,11 +48,16 @@ export function VentaResultado() {
   if (!d) return <div className="p-6 text-tinta-600">Cargando…</div>;
   const encolado = d.estado === 'ENCOLADO';
   const rechazado = d.estado === 'RECHAZADO';
+  const nce = d.tipo === '05';
   const titulo = rechazado
     ? 'DTE rechazado'
     : encolado
-      ? 'Venta en contingencia'
-      : 'Venta confirmada';
+      ? nce
+        ? 'Nota de crédito en contingencia'
+        : 'Venta en contingencia'
+      : nce
+        ? 'Nota de crédito emitida'
+        : 'Venta confirmada';
 
   return (
     <div className="grid h-full grid-cols-[1fr_520px] gap-6 overflow-auto p-6">
@@ -121,9 +126,13 @@ export function VentaResultado() {
           )}
         </Card>
         <div className="flex flex-wrap gap-2">
-          <Button kbd="F9" onClick={() => nav('/pos')}>
-            Nueva venta
-          </Button>
+          {nce ? (
+            <Button onClick={() => nav(`/dte/${d.id}`)}>Ver nota de crédito</Button>
+          ) : (
+            <Button kbd="F9" onClick={() => nav('/pos')}>
+              Nueva venta
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => setTicket(true)}>
             {encolado ? 'Imprimir comprobante provisional' : 'Imprimir ticket'}
           </Button>

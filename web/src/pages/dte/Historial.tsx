@@ -2,6 +2,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/api/client';
+import { useAuth } from '@/auth/AuthContext';
+import { Button } from '@/components/Button';
 import { SectionTitle } from '@/components/Card';
 import { EstadoDte, type Estado } from '@/components/EstadoDte';
 import { Input, Select } from '@/components/Input';
@@ -24,6 +26,7 @@ type Fila = {
 /** Historial de DTE con filtros reales (servidor). */
 export function Historial() {
   const nav = useNavigate();
+  const { user } = useAuth();
   const [f, setF] = useState({ q: '', tipo: '', estado: '', desde: '', hasta: '' });
   const [page, setPage] = useState(1);
   const dq = useDebounced(f.q, 250);
@@ -43,7 +46,17 @@ export function Historial() {
     };
   return (
     <div className="p-6">
-      <SectionTitle>Historial de DTE</SectionTitle>
+      <SectionTitle
+        actions={
+          user?.rol === 'ADMIN' && (
+            <Button variant="secondary" onClick={() => nav('/nce')}>
+              Nota de crédito
+            </Button>
+          )
+        }
+      >
+        Historial de DTE
+      </SectionTitle>
       <div className="mb-4 grid grid-cols-[1fr_160px_180px_160px_160px] gap-3">
         <Input
           aria-label="Buscar"
