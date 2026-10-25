@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthContext';
 import { Chip } from '@/components/Chip';
 import { useCaja } from '@/hooks/useCaja';
 import { usePublicConfig } from '@/pages/auth/Login';
@@ -15,13 +16,25 @@ export function Shell() {
   const [panel, setPanel] = useState(false);
   const caja = useCaja();
   const turno = caja.data?.turno ?? null;
+  const { user } = useAuth();
+  const loc = useLocation();
+  // Regla 7 / 10.1-5: el Cajero sin turno abierto tiene la terminal bloqueada.
+  const bloqueada = user?.rol === 'CAJERO' && !!caja.data && !turno;
+  const libres = [
+    '/caja/apertura',
+    '/caja/cerrada',
+    '/perfil',
+    '/acerca-simulacion',
+    '/consola-mh',
+  ];
+  const redirigir = bloqueada && !!caja.data?.ultimoCierre && !libres.includes(loc.pathname);
   return (
     <RealtimeProvider>
       <ShellCtx.Provider
         value={{ turnoAbierto: !!turno, cajaCodigo: caja.data?.caja.codigo ?? null }}
       >
         <div className="flex h-screen overflow-hidden">
-          <Rail />
+          <Rail locked={bloqueada} />
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
               left={
@@ -54,7 +67,7 @@ export function Shell() {
               }
             />
             <main className="min-h-0 flex-1 overflow-auto">
-              <Outlet />
+              {redirigir ? <Navigate to="/caja/cerrada" replace /> : <Outlet />}
             </main>
           </div>
         </div>

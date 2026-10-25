@@ -29,7 +29,7 @@ export function Button({
       type="button"
       {...rest}
       className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-70',
         size === 'lg' ? 'h-14 px-6 text-base' : 'h-9 px-4 text-sm',
         variants[variant],
         className,
