@@ -96,4 +96,4 @@ export function useAuth(): Ctx {
   return c;
 }
 
-export const homeFor = (rol: Rol) => (rol === 'ADMIN' ? '/resumen' : '/pos');
+export const homeFor = (rol: Rol) => (rol === 'ADMIN' ? '/resumen' : '/caja/apertura');
