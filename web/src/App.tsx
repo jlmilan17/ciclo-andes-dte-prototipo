@@ -11,7 +11,7 @@ import { MiPerfil } from './pages/auth/MiPerfil';
 import { SelectorRol } from './pages/auth/SelectorRol';
 import { Componentes } from './pages/dev/Componentes';
 import { Placeholder } from './pages/Placeholder';
-import { Catalogo } from './pages/catalogo/Catalogo';
+import { ROUTES } from './routes/table';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -21,9 +21,6 @@ function Home() {
   const { user } = useAuth();
   return <Navigate to={user ? homeFor(user.rol) : '/login'} replace />;
 }
-
-const ADMIN = ['ADMIN'] as const;
-const ALL = ['CAJERO', 'ADMIN'] as const;
 
 export function App() {
   return (
@@ -44,62 +41,13 @@ export function App() {
               >
                 <Route index element={<Home />} />
                 <Route path="/perfil" element={<MiPerfil />} />
-                <Route
-                  path="/resumen"
-                  element={
-                    <RequireRole roles={[...ADMIN]}>
-                      <Placeholder title="Resumen" />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/pos"
-                  element={
-                    <RequireRole roles={[...ALL]}>
-                      <Placeholder title="Punto de venta" />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/catalogo"
-                  element={
-                    <RequireRole roles={[...ADMIN]}>
-                      <Catalogo />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/clientes"
-                  element={
-                    <RequireRole roles={[...ALL]}>
-                      <Placeholder title="Clientes" />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/dte"
-                  element={
-                    <RequireRole roles={[...ALL]}>
-                      <Placeholder title="Historial de DTE" />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/contingencia"
-                  element={
-                    <RequireRole roles={[...ALL]}>
-                      <Placeholder title="Contingencia" />
-                    </RequireRole>
-                  }
-                />
-                <Route
-                  path="/usuarios"
-                  element={
-                    <RequireRole roles={[...ADMIN]}>
-                      <Placeholder title="Usuarios y roles" />
-                    </RequireRole>
-                  }
-                />
+                {ROUTES.map((r) => (
+                  <Route
+                    key={r.path}
+                    path={r.path}
+                    element={<RequireRole roles={r.roles}>{r.element}</RequireRole>}
+                  />
+                ))}
                 <Route path="/acceso-denegado" element={<AccesoDenegado />} />
                 <Route path="*" element={<Placeholder title="Página no encontrada" />} />
               </Route>
