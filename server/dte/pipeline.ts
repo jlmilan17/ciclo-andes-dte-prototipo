@@ -10,7 +10,7 @@ import { applyMovement } from '../lib/inventory.js';
 import { assertNrcRegistrado } from '../lib/padron.js';
 import { cents, numeric } from '../lib/sql.js';
 import type { AuthUser } from '../middleware/auth.js';
-import { MH_TIMEOUT_MS, callMh, type MhResult } from '../mh/client.js';
+import { MH_TIMEOUT_MS, callMh } from '../mh/client.js';
 import { mhStatus, publishCola, setOnline } from '../mh/status.js';
 import { buildDteJson, type LineaData, type ReceptorData } from './builders/common.js';
 import { nextNumeroControl } from './numeracion.js';
@@ -224,7 +224,7 @@ export async function transmitirDte(
     await aplicarRespuesta(dteId, r.data);
     return done('RECHAZADO', 'RECHAZO', r.data);
   }
-  const fallo = r as Extract<MhResult, { error: string }>;
+  const fallo = r;
   if (fallo.kind === 'sin_conexion') setOnline(false);
   await db.transaction().execute((trx) =>
     transition(trx, {

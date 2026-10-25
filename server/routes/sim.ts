@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { db } from '../db/database.js';
 import { seedAll } from '../db/seed/index.js';
+import { emitirVenta } from '../dte/pipeline.js';
 import { audit } from '../lib/audit.js';
 import { bus } from '../lib/bus.js';
 import { AppError, notFound } from '../lib/errors.js';
@@ -150,4 +151,58 @@ simRouter.get('/sim/consola/:id', async (req, res) => {
 simRouter.get('/sim/certificado', async (_req, res) => {
   const info = await certificateInfo();
   res.json({ ...info, publicKey: undefined });
+});
+
+/** "Cargar ventas de demostración del turno": ventas reales por el pipeline normal. */
+simRouter.post('/sim/cargar-ventas', async (req, res) => {
+  const { cantidad } = z
+    .object({ cantidad: z.number().int().min(1).max(20).default(6) })
+    .parse(req.body ?? {});
+  const productos = await db
+    .selectFrom('producto')
+    .select(['id'])
+    .where('activo', '=', true)
+    .where((eb) => eb.or([eb('tipo', '=', 'servicio'), eb('stock', '>=', 8)]))
+    .orderBy('sku')
+    .limit(40)
+    .execute();
+  const clientes = await db
+    .selectFrom('cliente')
+    .select(['id'])
+    .where('activo', '=', true)
+    .where('es_consumidor_final_generico', '=', false)
+    .orderBy('razon_social')
+    .limit(20)
+    .execute();
+  const metodos = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'] as const;
+  const pick = <T>(xs: readonly T[], i: number) => xs[i % xs.length]!;
+  const resultados = [];
+  for (let i = 0; i < cantidad; i++) {
+    const lineas = [0, 1, 2].slice(0, 1 + (i % 3)).map((k) => ({
+      producto_id: pick(productos, i * 7 + k * 3).id as string,
+      cantidad: 1 + ((i + k) % 2),
+    }));
+    const unicas = Object.values(Object.fromEntries(lineas.map((l) => [l.producto_id, l])));
+    const r = await emitirVenta(
+      {
+        cliente_id: i % 2 === 0 ? null : (pick(clientes, i).id as string),
+        lineas: unicas,
+        metodo_pago: pick(metodos, i),
+        efectivo_recibido: null,
+      },
+      req.user!,
+    );
+    resultados.push({
+      numeroControl: r.dte.numeroControl,
+      estado: r.dte.estado,
+      total: r.dte.total,
+    });
+  }
+  await audit({
+    usuarioId: req.user!.id,
+    accion: 'SIM_CARGAR_VENTAS',
+    entidad: 'simulador',
+    detalle: { cantidad },
+  });
+  res.json({ ventas: resultados });
 });

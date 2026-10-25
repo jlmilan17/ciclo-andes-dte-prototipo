@@ -48,6 +48,19 @@ export function SimPanel({ onClose }: { onClose: () => void }) {
       void api('/auth/me').catch(() => undefined);
     },
   });
+  const cargar = useMutation({
+    mutationFn: () =>
+      api<{ ventas: Array<{ estado: string }> }>('/sim/cargar-ventas', { body: { cantidad: 6 } }),
+    onSuccess: (r) => {
+      qc.invalidateQueries();
+      const enc = r.ventas.filter((v) => v.estado === 'ENCOLADO').length;
+      toast(
+        `${r.ventas.length} ventas de demostración emitidas${enc ? ` (${enc} en contingencia)` : ''}.`,
+        'exito',
+      );
+    },
+    onError: (e) => toast(e.message, 'error'),
+  });
   const reset = useMutation({
     mutationFn: () => api('/sim/reset', { method: 'POST' }),
     onSuccess: () => {
@@ -136,6 +149,9 @@ export function SimPanel({ onClose }: { onClose: () => void }) {
         <h3 className="font-cond font-semibold">Sesión y datos</h3>
         <Button variant="secondary" onClick={() => expirar.mutate()}>
           Expirar sesión ahora
+        </Button>
+        <Button variant="secondary" onClick={() => cargar.mutate()} disabled={cargar.isPending}>
+          {cargar.isPending ? 'Emitiendo ventas…' : 'Cargar ventas de demostración del turno'}
         </Button>
         {confirmReset ? (
           <div className="rounded-control border border-granate-600/40 bg-granate-100 p-3 text-sm">
