@@ -13,6 +13,8 @@ type Mov = {
   dteId?: string | null;
   loteId?: string | null;
   usuarioId?: string | null;
+  /** Solo para la semilla de datos históricos. */
+  at?: Date;
 };
 
 /**
@@ -57,6 +59,7 @@ export async function applyMovement(trx: AnyDb, m: Mov): Promise<{ saldo: number
       referencia_lote_id: m.loteId ?? null,
       saldo_resultante: saldo,
       usuario_id: m.usuarioId ?? null,
+      ...(m.at ? { created_at: m.at } : {}),
     })
     .execute();
   return { saldo };

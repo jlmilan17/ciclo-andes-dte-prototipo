@@ -121,7 +121,7 @@ export async function crearDteFirmado(
       })),
     )
     .execute();
-  await recordCreation(trx, d.id, p.actor.nombre);
+  await recordCreation(trx, d.id, p.actor.nombre, p.emitidoAt);
 
   let t = performance.now();
   const json = buildDteJson({
@@ -150,6 +150,7 @@ export async function crearDteFirmado(
     actor: p.actor.nombre,
     motivo: 'Firmado con certificado de pruebas (JWS RS256)',
     set: { jws },
+    at: p.emitidoAt,
   });
   return {
     id: d.id,
@@ -404,5 +405,112 @@ export async function emitirVenta(input: VentaInput, user: AuthUser) {
     pasos: [...creado.pasos, { paso: 'transmision' as const, ms: tx.ms, resultado: tx.resultado }],
     pipelineMs,
     respuesta: tx.respuesta ?? null,
+  };
+}
+
+/**
+ * Corrección de un DTE RECHAZADO (ZG-16): nuevo DTE con nuevo codigoGeneracion que referencia
+ * al rechazado. Puede cambiarse el receptor (p. ej. un NRC corregido). No mueve inventario (ZG-18).
+ */
+export async function corregirDte(
+  rechazadoId: string,
+  clienteId: string | null | undefined,
+  user: AuthUser,
+) {
+  const t0 = performance.now();
+  const creado = await db.transaction().execute(async (trx) => {
+    const orig = await trx
+      .selectFrom('dte')
+      .select(['id', 'tipo', 'estado', 'cliente_id', 'venta_id', 'turno_id'])
+      .where('id', '=', rechazadoId)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!orig) throw new AppError(404, 'NO_ENCONTRADO', 'DTE no encontrado.');
+    if (orig.estado !== 'RECHAZADO')
+      throw new AppError(409, 'NO_RECHAZADO', 'Solo se corrigen documentos RECHAZADOS.');
+    const previa = await trx
+      .selectFrom('dte')
+      .select('numero_control')
+      .where('corrige_dte_id', '=', rechazadoId)
+      .executeTakeFirst();
+    if (previa)
+      throw new AppError(
+        409,
+        'YA_CORREGIDO',
+        `Este documento ya fue corregido con ${previa.numero_control}.`,
+      );
+    if (orig.tipo === '05')
+      throw new AppError(
+        422,
+        'NCE_RECHAZADA',
+        'Emita una nueva nota de crédito desde el documento original.',
+      );
+
+    const receptor = await loadReceptor(trx, clienteId === undefined ? orig.cliente_id : clienteId);
+    const tipo: TipoDte =
+      receptor.tipo_contribuyente === 'CONSUMIDOR_FINAL' ? '01' : (orig.tipo as TipoDte);
+    if (tipo === '03') await assertNrcRegistrado(receptor.nrc, trx);
+    const lineas = await trx
+      .selectFrom('dte_linea')
+      .select([
+        'producto_id',
+        'codigo',
+        'descripcion',
+        'tipo_item',
+        'cantidad',
+        cents('precio_unitario').as('precio'),
+      ])
+      .where('dte_id', '=', rechazadoId)
+      .orderBy('num_item')
+      .execute();
+    const data = lineas.map((l) => ({
+      productoId: l.producto_id as string | null,
+      codigo: l.codigo as string,
+      descripcion: l.descripcion as string,
+      tipoItem: l.tipo_item as 'bien' | 'servicio',
+      cantidad: l.cantidad as number,
+      precioUnitario: l.precio,
+      gravado: l.precio * l.cantidad,
+    }));
+    const totals = computeTotals({
+      tipo,
+      lineas: data.map((l) => ({ cantidad: l.cantidad, precioUnitario: l.precioUnitario })),
+      receptor: receptor.tipo_contribuyente,
+      ...retentionOpts(),
+    });
+    const venta = orig.venta_id
+      ? await trx
+          .selectFrom('venta')
+          .select(['metodo_pago'])
+          .where('id', '=', orig.venta_id)
+          .executeTakeFirst()
+      : undefined;
+    return crearDteFirmado(trx, {
+      tipo,
+      receptor,
+      lineas: data,
+      totals,
+      actor: user,
+      ventaId: orig.venta_id,
+      turnoId: orig.turno_id,
+      corrigeDteId: rechazadoId,
+      pagos: venta ? [{ metodo: venta.metodo_pago, monto: totals.total }] : undefined,
+    });
+  });
+  const tx = await transmitirDte(
+    creado.id,
+    user.nombre,
+    Math.max(300, MH_TIMEOUT_MS - Math.round(performance.now() - t0)),
+  );
+  const pipelineMs = Math.round(performance.now() - t0);
+  await db
+    .updateTable('dte')
+    .set({ pipeline_ms: pipelineMs })
+    .where('id', '=', creado.id)
+    .execute();
+  return {
+    dte: { id: creado.id, estado: tx.estado, numeroControl: creado.numeroControl },
+    pasos: [...creado.pasos, { paso: 'transmision' as const, ms: tx.ms, resultado: tx.resultado }],
+    pipelineMs,
   };
 }

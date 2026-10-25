@@ -54,6 +54,8 @@ export type TransitionInput = {
   payload?: unknown;
   /** Columnas del DTE que cambian junto con el estado (sello, jws, etc.). */
   set?: Record<string, unknown>;
+  /** Solo para la semilla de datos históricos: marca de tiempo del evento. */
+  at?: Date;
 };
 
 /**
@@ -87,13 +89,19 @@ export async function transition(
       actor: input.actor,
       motivo: input.motivo ?? null,
       payload: input.payload === undefined ? null : JSON.stringify(input.payload),
+      ...(input.at ? { created_at: input.at } : {}),
     })
     .execute();
   return { from, to: input.to };
 }
 
 /** Evento de creación (sin estado de origen) para la bitácora del DTE. */
-export async function recordCreation(trx: Trx, dteId: string, actor: string): Promise<void> {
+export async function recordCreation(
+  trx: Trx,
+  dteId: string,
+  actor: string,
+  at?: Date,
+): Promise<void> {
   await trx
     .insertInto('dte_event')
     .values({
@@ -102,6 +110,7 @@ export async function recordCreation(trx: Trx, dteId: string, actor: string): Pr
       estado_destino: 'BORRADOR',
       actor,
       motivo: 'Documento generado',
+      ...(at ? { created_at: at } : {}),
     })
     .execute();
 }
