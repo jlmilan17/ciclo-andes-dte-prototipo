@@ -16,7 +16,7 @@
     "start:demo": "npm run db:up && npm run db:migrate && npm run seed && npm run dev",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "typecheck": "npm run typecheck --workspaces",
+    "typecheck": "npm run typecheck --workspaces && tsc -p e2e/tsconfig.json",
     "test": "npm run test --workspaces --if-present",
     "verify": "npm run lint && npm run typecheck && npm run test",
     "e2e": "playwright test"
