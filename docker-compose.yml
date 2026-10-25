@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    container_name: ciclo-andes-db
+    environment:
+      POSTGRES_USER: ciclo
+      POSTGRES_PASSWORD: ciclo
+      POSTGRES_DB: ciclo_andes
+      TZ: America/El_Salvador
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ciclo -d ciclo_andes']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
