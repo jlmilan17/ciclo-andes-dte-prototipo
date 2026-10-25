@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+*.db
+*.p12
+*.pem
+coverage
+playwright-report
+test-results
+*.tsbuildinfo
