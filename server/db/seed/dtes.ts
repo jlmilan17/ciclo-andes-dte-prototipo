@@ -8,6 +8,7 @@ import { nextSequence } from '../../dte/numeracion.js';
 import { crearDteFirmado, loadReceptor } from '../../dte/pipeline.js';
 import { signJson } from '../../dte/signer.js';
 import { transition } from '../../dte/stateMachine.js';
+import { calcularCorte } from '../../lib/corte.js';
 import { applyMovement } from '../../lib/inventory.js';
 import { cents, numeric } from '../../lib/sql.js';
 import type { AuthUser } from '../../middleware/auth.js';
@@ -387,6 +388,19 @@ export async function seedDtes(
     });
     await procesar(trx, d.id, 'PROCESADO', at, '05', t.total);
   });
+  // Fotografía del Corte Z de los turnos históricos.
+  for (const turnoId of turnos.values()) {
+    const corte = await calcularCorte(turnoId, null, db);
+    const contado = corte.efectivoEsperado;
+    await db
+      .updateTable('turno_caja')
+      .set({
+        corte: JSON.stringify({ ...corte, efectivoContado: contado, diferencia: 0 }),
+        efectivo_contado: numeric(contado),
+      })
+      .where('id', '=', turnoId)
+      .execute();
+  }
   return { dteIds: ids };
 }
 
