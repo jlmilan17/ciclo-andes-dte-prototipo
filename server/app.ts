@@ -2,6 +2,7 @@ import express from 'express';
 import { errorHandler } from './lib/errors.js';
 import { auditoriaRouter } from './routes/auditoria.js';
 import { authRouter } from './routes/auth.js';
+import { productosRouter } from './routes/productos.js';
 import { publicConfigRouter } from './routes/publicConfig.js';
 
 export function createApp() {
@@ -16,6 +17,7 @@ export function createApp() {
   api.use(publicConfigRouter);
   api.use(authRouter);
   api.use(auditoriaRouter);
+  api.use(productosRouter);
   app.use('/api', api);
 
   app.use('/api', (_req, res) => {
