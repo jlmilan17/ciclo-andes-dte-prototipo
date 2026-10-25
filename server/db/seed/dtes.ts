@@ -106,7 +106,7 @@ const SPECS: Spec[] = [
     horasAtras: 2 * 24 + 3,
     tipo: '01',
     cliente: null,
-    items: [['BIC-URB-0260', 1]],
+    items: [['BIC-MTB-0290', 1]],
     pago: 'EFECTIVO',
     final: 'PROCESADO',
   },
@@ -162,7 +162,7 @@ const SPECS: Spec[] = [
     tipo: '03',
     cliente: 'Rutas del Pacífico, S.A. de C.V.',
     items: [
-      ['BIC-URB-0260', 1],
+      ['BIC-MTB-0290', 1],
       ['CAS-URB-0114', 1],
     ],
     pago: 'TRANSFERENCIA',
