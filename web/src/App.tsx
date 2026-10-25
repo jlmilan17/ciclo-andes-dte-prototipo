@@ -11,6 +11,7 @@ import { MiPerfil } from './pages/auth/MiPerfil';
 import { SelectorRol } from './pages/auth/SelectorRol';
 import { Componentes } from './pages/dev/Componentes';
 import { Placeholder } from './pages/Placeholder';
+import { Catalogo } from './pages/catalogo/Catalogo';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -63,7 +64,7 @@ export function App() {
                   path="/catalogo"
                   element={
                     <RequireRole roles={[...ADMIN]}>
-                      <Placeholder title="Catálogo" />
+                      <Catalogo />
                     </RequireRole>
                   }
                 />

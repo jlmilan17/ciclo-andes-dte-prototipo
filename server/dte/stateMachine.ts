@@ -1,3 +1,5 @@
+import type { AnyDb } from '../db/types.js';
+
 export const ESTADOS = [
   'BORRADOR',
   'FIRMADO',
@@ -41,8 +43,7 @@ export function assertTransition(from: EstadoDte, to: EstadoDte): void {
   if (!canTransition(from, to)) throw new InvalidTransitionError(from, to);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Trx = import('kysely').Kysely<any>;
+type Trx = AnyDb;
 
 export type TransitionInput = {
   dteId: string;

@@ -1,12 +1,12 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FileMigrationProvider, Migrator, type Kysely } from 'kysely';
+import { FileMigrationProvider, Migrator } from 'kysely';
+import type { AnyDb } from './types.js';
 
 const migrationFolder = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function migrateToLatest(db: Kysely<any>): Promise<void> {
+export async function migrateToLatest(db: AnyDb): Promise<void> {
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({ fs, path, migrationFolder }),

@@ -1,5 +1,5 @@
-import type { Kysely } from 'kysely';
 import { db as defaultDb } from '../db/database.js';
+import type { AnyDb } from '../db/types.js';
 
 /** Registro de auditoría de solo inserción (PRT-SEG-05, RNF-INV-02). */
 export async function audit(
@@ -10,8 +10,7 @@ export async function audit(
     entidadId?: string;
     detalle?: unknown;
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  trx: Kysely<any> = defaultDb,
+  trx: AnyDb = defaultDb,
 ): Promise<void> {
   await trx
     .insertInto('audit_log')

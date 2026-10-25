@@ -39,5 +39,10 @@ export function Td({
   num,
   ...rest
 }: TdHTMLAttributes<HTMLTableCellElement> & { num?: boolean }) {
-  return <td {...rest} className={cx('px-3 py-2', num && 'num text-right', className)} />;
+  return (
+    <td
+      {...rest}
+      className={cx('px-3 py-2', num && 'num whitespace-nowrap text-right', className)}
+    />
+  );
 }

@@ -1,4 +1,5 @@
-import { sql, type Kysely } from 'kysely';
+import { sql } from 'kysely';
+import type { AnyDb } from '../types.js';
 
 const TABLES = [
   'audit_log',
@@ -24,8 +25,7 @@ const TABLES = [
 ];
 
 /** Vacía los datos de negocio. TRUNCATE no dispara los triggers por fila de las bitácoras inmutables. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function truncateAll(db: Kysely<any>): Promise<void> {
+export async function truncateAll(db: AnyDb): Promise<void> {
   await sql.raw(`TRUNCATE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`).execute(db);
   await sql`UPDATE contador_numeracion SET ultimo = 0`.execute(db);
 }
