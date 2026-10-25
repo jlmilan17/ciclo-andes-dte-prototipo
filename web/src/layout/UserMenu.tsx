@@ -50,8 +50,9 @@ export function UserMenu() {
               className={item}
               onClick={async () => {
                 setOpen(false);
-                await logout();
+                // Navegar antes de cerrar sesión: si no, el guard del shell redirige al login.
                 nav('/demo/roles');
+                await logout();
               }}
             >
               Cambiar de rol <span className="text-xs text-pizarra-400">(solo demo)</span>

@@ -54,6 +54,7 @@ export function Select({
     <label className="flex flex-col gap-1 text-sm">
       {label && <span className="font-medium text-tinta-600">{label}</span>}
       <select
+        aria-label={label}
         {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
         className={cx(
           'h-9 rounded-control border bg-superficie px-2',
