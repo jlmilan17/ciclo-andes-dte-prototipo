@@ -5,6 +5,8 @@ import { ClienteFicha } from '@/pages/clientes/ClienteFicha';
 import { Clientes } from '@/pages/clientes/Clientes';
 import { Placeholder } from '@/pages/Placeholder';
 import { AperturaCaja } from '@/pages/caja/AperturaCaja';
+import { CajaCerrada } from '@/pages/caja/CajaCerrada';
+import { CorteZ } from '@/pages/caja/CorteZ';
 import { Contingencia } from '@/pages/contingencia/Contingencia';
 import { Correos } from '@/pages/correos/Correos';
 import { DteDetalle } from '@/pages/dte/DteDetalle';
@@ -26,6 +28,8 @@ export const ROUTES: AppRoute[] = [
   { path: '/pos', roles: ALL, element: <Pos /> },
   { path: '/pos/venta/:id', roles: ALL, element: <VentaResultado /> },
   { path: '/caja/apertura', roles: ALL, element: <AperturaCaja /> },
+  { path: '/caja/corte-z', roles: ALL, element: <CorteZ /> },
+  { path: '/caja/cerrada', roles: ALL, element: <CajaCerrada /> },
   { path: '/correos', roles: ALL, element: <Correos /> },
   { path: '/catalogo', roles: ADMIN, element: <Catalogo /> },
   { path: '/clientes', roles: ALL, element: <Clientes /> },

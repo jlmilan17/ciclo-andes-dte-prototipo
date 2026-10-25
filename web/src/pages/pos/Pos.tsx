@@ -29,7 +29,8 @@ type VentaResp = {
 export function Pos() {
   const caja = useCaja();
   if (caja.isLoading) return <div className="p-6 text-tinta-600">Cargando caja…</div>;
-  if (caja.data && !caja.data.turno) return <Navigate to="/caja/apertura" replace />;
+  if (caja.data && !caja.data.turno)
+    return <Navigate to={caja.data.ultimoCierre ? '/caja/cerrada' : '/caja/apertura'} replace />;
   if (!caja.data) return null;
   return <PosTerminal cajaId={caja.data.caja.id} />;
 }
