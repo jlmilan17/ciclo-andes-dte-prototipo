@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import type { Kysely } from 'kysely';
 import { config } from '../../config.js';
+import type { AnyDb } from '../types.js';
 
 export const DEMO_PASSWORD = 'Demo2026!';
 
@@ -14,8 +14,7 @@ export const USUARIOS = {
   cajeroPrueba: { nombre: 'Marta López', correo: 'marta.lopez@cicloandes.test', rol: 'CAJERO' },
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function seedBase(db: Kysely<any>) {
+export async function seedBase(db: AnyDb) {
   await db
     .insertInto('config')
     .values([

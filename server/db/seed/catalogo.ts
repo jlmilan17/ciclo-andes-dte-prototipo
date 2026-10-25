@@ -1,7 +1,7 @@
-import type { Kysely } from 'kysely';
 import { toCents } from '../../domain/money.js';
 import { numeric } from '../../lib/sql.js';
 import { rng } from './rng.js';
+import type { AnyDb } from '../types.js';
 
 type Prod = {
   sku: string;
@@ -264,12 +264,7 @@ export function generarCatalogo(total = 214): Prod[] {
   return out;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function seedCatalogo(
-  db: Kysely<any>,
-  adminId: string,
-  opts: { minimal?: boolean } = {},
-) {
+export async function seedCatalogo(db: AnyDb, adminId: string, opts: { minimal?: boolean } = {}) {
   const proveedor = await db
     .insertInto('proveedor')
     .values([

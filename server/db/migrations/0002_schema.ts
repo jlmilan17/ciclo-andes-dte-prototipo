@@ -1,8 +1,8 @@
-import { sql, type Kysely } from 'kysely';
+import { sql } from 'kysely';
+import type { AnyDb } from '../types.js';
 
 /* Modelo de datos mínimo (sección 8). Montos NUMERIC(12,2), stock INTEGER, fechas TIMESTAMPTZ. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: AnyDb): Promise<void> {
   await sql`
     CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
@@ -293,8 +293,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   `.execute(db);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: AnyDb): Promise<void> {
   await sql`
     DROP TABLE IF EXISTS contador_numeracion, audit_log, correo_simulado, mh_exchange, movimiento_inventario,
       evento_invalidacion, motivo_invalidacion, dte_event, dte_linea, dte, lote_contingencia, venta,

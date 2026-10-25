@@ -1,6 +1,6 @@
-import type { Kysely } from 'kysely';
 import { AppError } from './errors.js';
 import { cents } from './sql.js';
+import type { AnyDb } from '../db/types.js';
 
 export type TipoMovimiento =
   'INGRESO' | 'VENTA' | 'DEVOLUCION' | 'REVERSION_INVALIDACION' | 'AJUSTE';
@@ -19,8 +19,7 @@ type Mov = {
  * Aplica un movimiento de inventario con la fila del producto bloqueada.
  * Los servicios no llevan existencias (PRT-POS-08) y se omiten.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function applyMovement(trx: Kysely<any>, m: Mov): Promise<{ saldo: number } | null> {
+export async function applyMovement(trx: AnyDb, m: Mov): Promise<{ saldo: number } | null> {
   const p = await trx
     .selectFrom('producto')
     .select(['id', 'nombre', 'sku', 'tipo', 'stock', cents('costo_promedio').as('costo')])
