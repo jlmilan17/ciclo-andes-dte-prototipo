@@ -63,15 +63,20 @@ export function generateTestCertificate(nit: string) {
   return { publicKey, privateKey, info };
 }
 
-type Loaded = { key: Awaited<ReturnType<typeof importPKCS8>>; publicPem: string; info: CertInfo };
+type Loaded = {
+  enc: string;
+  key: Awaited<ReturnType<typeof importPKCS8>>;
+  publicPem: string;
+  info: CertInfo;
+};
 let cache: Loaded | null = null;
 
 export function resetSignerCache() {
   cache = null;
 }
 
+/** Lee el certificado vigente; la llave importada se reutiliza mientras no cambie (p. ej. tras re-sembrar). */
 async function load(trx: AnyDb): Promise<Loaded> {
-  if (cache) return cache;
   const rows = await trx
     .selectFrom('config')
     .select(['clave', 'valor'])
@@ -80,7 +85,9 @@ async function load(trx: AnyDb): Promise<Loaded> {
   const get = (k: string) => rows.find((r) => r.clave === k)?.valor;
   const enc = get('CERT_PRIVATE_KEY_ENC');
   if (!enc) throw new Error('No hay certificado de pruebas. Ejecute npm run seed.');
+  if (cache && cache.enc === enc) return cache;
   cache = {
+    enc,
     key: await importPKCS8(decryptPrivateKey(enc), 'RS256'),
     publicPem: get('CERT_PUBLIC_KEY')!,
     info: JSON.parse(get('CERT_INFO')!),
