@@ -5,9 +5,13 @@ import { EMISOR, MH_API_KEY } from '../dte/emisor.js';
 /** RNF-CCFE-01: firma y envío en ≤ 3 s. Pasado el tiempo, entra la política de contingencia. */
 export const MH_TIMEOUT_MS = 3000;
 
+type MhRespuesta = { status: number; data: Record<string, unknown>; latencia: number };
+type MhFallo = { latencia: number; error: string };
 export type MhResult =
-  | { kind: 'ok' | 'rechazo'; status: number; data: Record<string, unknown>; latencia: number }
-  | { kind: 'sin_conexion' | 'timeout'; latencia: number; error: string };
+  | ({ kind: 'ok' } & MhRespuesta)
+  | ({ kind: 'rechazo' } & MhRespuesta)
+  | ({ kind: 'sin_conexion' } & MhFallo)
+  | ({ kind: 'timeout' } & MhFallo);
 
 type CallOpts = {
   dteId?: string | null;
@@ -72,7 +76,9 @@ export async function callMh(path: string, body: unknown, opts: CallOpts = {}): 
     }
     const latencia = Math.round(performance.now() - t0);
     const rechazado = r.status >= 400 || r.data?.estado === 'RECHAZADO';
-    result = { kind: rechazado ? 'rechazo' : 'ok', status: r.status, data: r.data, latencia };
+    result = rechazado
+      ? { kind: 'rechazo', status: r.status, data: r.data, latencia }
+      : { kind: 'ok', status: r.status, data: r.data, latencia };
   } catch (e) {
     const latencia = Math.round(performance.now() - t0);
     result = { kind: classify(e), latencia, error: (e as Error).message };
