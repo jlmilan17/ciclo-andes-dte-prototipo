@@ -1,4 +1,7 @@
 import express from 'express';
+import { errorHandler } from './lib/errors.js';
+import { auditoriaRouter } from './routes/auditoria.js';
+import { authRouter } from './routes/auth.js';
 
 export function createApp() {
   const app = express();
@@ -8,5 +11,14 @@ export function createApp() {
     res.json({ ok: true });
   });
 
+  const api = express.Router();
+  api.use(authRouter);
+  api.use(auditoriaRouter);
+  app.use('/api', api);
+
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ code: 'NO_ENCONTRADO', message: 'Ruta no encontrada.' });
+  });
+  app.use(errorHandler);
   return app;
 }
