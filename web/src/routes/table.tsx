@@ -3,7 +3,9 @@ import type { Rol } from '@/auth/AuthContext';
 import { Catalogo } from '@/pages/catalogo/Catalogo';
 import { ClienteFicha } from '@/pages/clientes/ClienteFicha';
 import { Clientes } from '@/pages/clientes/Clientes';
-import { Placeholder } from '@/pages/Placeholder';
+import { Auditoria } from '@/pages/admin/Auditoria';
+import { Resumen } from '@/pages/admin/Resumen';
+import { Usuarios } from '@/pages/admin/Usuarios';
 import { AperturaCaja } from '@/pages/caja/AperturaCaja';
 import { CajaCerrada } from '@/pages/caja/CajaCerrada';
 import { CorteZ } from '@/pages/caja/CorteZ';
@@ -24,7 +26,7 @@ export type AppRoute = { path: string; roles: Rol[]; element: ReactNode };
 
 /** Rutas protegidas del shell con los roles que las pueden ver (RF-SEG-02). */
 export const ROUTES: AppRoute[] = [
-  { path: '/resumen', roles: ADMIN, element: <Placeholder title="Resumen" /> },
+  { path: '/resumen', roles: ADMIN, element: <Resumen /> },
   { path: '/pos', roles: ALL, element: <Pos /> },
   { path: '/pos/venta/:id', roles: ALL, element: <VentaResultado /> },
   { path: '/caja/apertura', roles: ALL, element: <AperturaCaja /> },
@@ -39,7 +41,8 @@ export const ROUTES: AppRoute[] = [
   { path: '/dte/:id/nce', roles: ADMIN, element: <NotaCredito /> },
   { path: '/nce', roles: ADMIN, element: <NotaCredito /> },
   { path: '/contingencia', roles: ALL, element: <Contingencia /> },
-  { path: '/usuarios', roles: ADMIN, element: <Placeholder title="Usuarios y roles" /> },
+  { path: '/usuarios', roles: ADMIN, element: <Usuarios /> },
+  { path: '/auditoria', roles: ADMIN, element: <Auditoria /> },
   { path: '/consola-mh', roles: ALL, element: <ConsolaMh /> },
   { path: '/acerca-simulacion', roles: ALL, element: <AcercaSimulacion /> },
 ];
