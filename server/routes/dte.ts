@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db/database.js';
 import { evaluarInvalidable, invalidarDte } from '../dte/invalidacion.js';
+import { buscarOriginal, emitirNce } from '../dte/nce.js';
 import { corregirDte, emitirVenta } from '../dte/pipeline.js';
 import { loadDte } from '../dte/repo.js';
 import { audit } from '../lib/audit.js';
@@ -50,6 +51,39 @@ dteRouter.post('/ventas', requireAuth, async (req, res) => {
     entidad: 'dte',
     entidadId: r.dte.id,
     detalle: { estado: r.dte.estado, total: r.dte.total },
+  });
+  res.status(201).json(r);
+});
+
+/** RF-NCE-01: búsqueda del documento original por UUID o número de control (Administrador). */
+dteRouter.get('/nce/original', requireAuth, requireAdmin, async (req, res) => {
+  const { q } = z
+    .object({ q: z.string().trim().min(1, 'Ingrese el código de generación o número de control.') })
+    .parse(req.query);
+  res.json(await buscarOriginal(q));
+});
+
+/** SRS-REQ-DTE-004: emisión de NCE (Administrador). */
+dteRouter.post('/dte/nce', requireAuth, requireAdmin, async (req, res) => {
+  const b = z
+    .object({
+      original_id: z.string().uuid(),
+      lineas: z
+        .array(z.object({ linea_id: z.string().uuid(), cantidad: z.number().int().min(0) }))
+        .min(1),
+    })
+    .parse(req.body);
+  const r = await emitirNce(
+    b.original_id,
+    b.lineas.map((l) => ({ lineaId: l.linea_id, cantidad: l.cantidad })),
+    req.user!,
+  );
+  await audit({
+    usuarioId: req.user!.id,
+    accion: 'NCE_EMITIDA',
+    entidad: 'dte',
+    entidadId: r.dte.id,
+    detalle: { original: b.original_id, total: r.dte.total },
   });
   res.status(201).json(r);
 });
