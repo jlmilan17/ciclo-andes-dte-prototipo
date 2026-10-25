@@ -3,7 +3,7 @@ import { cx } from './cx';
 
 export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-card border border-borde bg-superficie">
+    <div className="overflow-x-auto rounded-card border border-borde bg-superficie">
       <table className="w-full border-collapse text-sm">
         <thead className="bg-papel-50 text-left text-xs uppercase tracking-wide text-tinta-600">
           <tr>
