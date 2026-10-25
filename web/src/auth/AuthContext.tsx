@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { SESSION_EXPIRED_EVENT, api, tokenStore } from '@/api/client';
+import { ApiError, SESSION_EXPIRED_EVENT, api, tokenStore } from '@/api/client';
 
 export type Rol = 'CAJERO' | 'ADMIN';
 export type User = { id: string; nombre: string; correo: string; rol: Rol; cajaId: string | null };
@@ -31,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     api<{ user: User }>('/auth/me')
       .then((r) => setUser(r.user))
-      .catch(() => tokenStore.set(null))
+      .catch((e) => {
+        // Solo un 401 invalida la sesión; un error de red (API reiniciándose) no.
+        if (e instanceof ApiError && e.status === 401) tokenStore.set(null);
+      })
       .finally(() => setReady(true));
   }, []);
 
