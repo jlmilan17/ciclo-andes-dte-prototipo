@@ -40,3 +40,67 @@ export function canTransition(from: EstadoDte, to: EstadoDte): boolean {
 export function assertTransition(from: EstadoDte, to: EstadoDte): void {
   if (!canTransition(from, to)) throw new InvalidTransitionError(from, to);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Trx = import('kysely').Kysely<any>;
+
+export type TransitionInput = {
+  dteId: string;
+  to: EstadoDte;
+  actor: string;
+  motivo?: string;
+  /** Respuesta del MH u otros datos del evento, guardados en dte_event.payload. */
+  payload?: unknown;
+  /** Columnas del DTE que cambian junto con el estado (sello, jws, etc.). */
+  set?: Record<string, unknown>;
+};
+
+/**
+ * Única vía para cambiar el estado de un DTE. Bloquea la fila, valida la transición,
+ * actualiza el estado y escribe la bitácora inmutable en dte_event, en la misma transacción.
+ */
+export async function transition(
+  trx: Trx,
+  input: TransitionInput,
+): Promise<{ from: EstadoDte; to: EstadoDte }> {
+  const row = await trx
+    .selectFrom('dte')
+    .select(['estado'])
+    .where('id', '=', input.dteId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!row) throw new Error(`DTE ${input.dteId} no existe`);
+  const from = row.estado as EstadoDte;
+  assertTransition(from, input.to);
+  await trx
+    .updateTable('dte')
+    .set({ ...(input.set ?? {}), estado: input.to })
+    .where('id', '=', input.dteId)
+    .execute();
+  await trx
+    .insertInto('dte_event')
+    .values({
+      dte_id: input.dteId,
+      estado_origen: from,
+      estado_destino: input.to,
+      actor: input.actor,
+      motivo: input.motivo ?? null,
+      payload: input.payload === undefined ? null : JSON.stringify(input.payload),
+    })
+    .execute();
+  return { from, to: input.to };
+}
+
+/** Evento de creación (sin estado de origen) para la bitácora del DTE. */
+export async function recordCreation(trx: Trx, dteId: string, actor: string): Promise<void> {
+  await trx
+    .insertInto('dte_event')
+    .values({
+      dte_id: dteId,
+      estado_origen: null,
+      estado_destino: 'BORRADOR',
+      actor,
+      motivo: 'Documento generado',
+    })
+    .execute();
+}
