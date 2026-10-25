@@ -49,15 +49,12 @@ describe('usuarios y roles', () => {
   it('un Cajero sin caja se rechaza; el Administrador no puede desactivarse a sí mismo', async () => {
     expect(
       (
-        await request(app)
-          .post('/api/usuarios')
-          .set(bearer(admin))
-          .send({
-            nombre: 'Sin Caja',
-            correo: 'x@cicloandes.test',
-            rol: 'CAJERO',
-            password: 'Segura2026!',
-          })
+        await request(app).post('/api/usuarios').set(bearer(admin)).send({
+          nombre: 'Sin Caja',
+          correo: 'x@cicloandes.test',
+          rol: 'CAJERO',
+          password: 'Segura2026!',
+        })
       ).status,
     ).toBe(422);
     const r = await request(app)
