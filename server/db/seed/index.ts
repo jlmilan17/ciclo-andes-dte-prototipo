@@ -1,5 +1,6 @@
 import { seedBase } from './base.js';
 import { seedCatalogo } from './catalogo.js';
+import { seedCertificado } from './certificado.js';
 import { seedClientes } from './clientes.js';
 import { truncateAll } from './reset.js';
 import type { AnyDb } from '../types.js';
@@ -12,5 +13,6 @@ export async function seedAll(db: AnyDb, opts: SeedOptions = {}) {
   const base = await seedBase(db);
   const catalogo = await seedCatalogo(db, base.adminId, opts);
   const clientes = await seedClientes(db, opts);
+  await seedCertificado(db);
   return { ...base, ...catalogo, ...clientes };
 }

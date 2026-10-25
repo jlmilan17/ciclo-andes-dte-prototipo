@@ -3,8 +3,10 @@ import { errorHandler } from './lib/errors.js';
 import { auditoriaRouter } from './routes/auditoria.js';
 import { authRouter } from './routes/auth.js';
 import { clientesRouter } from './routes/clientes.js';
+import { eventsRouter } from './routes/events.js';
 import { productosRouter } from './routes/productos.js';
 import { publicConfigRouter } from './routes/publicConfig.js';
+import { simRouter } from './routes/sim.js';
 
 export function createApp() {
   const app = express();
@@ -20,6 +22,8 @@ export function createApp() {
   api.use(auditoriaRouter);
   api.use(productosRouter);
   api.use(clientesRouter);
+  api.use(simRouter);
+  api.use(eventsRouter);
   app.use('/api', api);
 
   app.use('/api', (_req, res) => {

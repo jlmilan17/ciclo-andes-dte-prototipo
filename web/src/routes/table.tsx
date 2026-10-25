@@ -4,6 +4,8 @@ import { Catalogo } from '@/pages/catalogo/Catalogo';
 import { ClienteFicha } from '@/pages/clientes/ClienteFicha';
 import { Clientes } from '@/pages/clientes/Clientes';
 import { Placeholder } from '@/pages/Placeholder';
+import { AcercaSimulacion } from '@/pages/sim/AcercaSimulacion';
+import { ConsolaMh } from '@/pages/sim/ConsolaMh';
 
 const ADMIN: Rol[] = ['ADMIN'];
 const ALL: Rol[] = ['CAJERO', 'ADMIN'];
@@ -20,4 +22,6 @@ export const ROUTES: AppRoute[] = [
   { path: '/dte', roles: ALL, element: <Placeholder title="Historial de DTE" /> },
   { path: '/contingencia', roles: ALL, element: <Placeholder title="Contingencia" /> },
   { path: '/usuarios', roles: ADMIN, element: <Placeholder title="Usuarios y roles" /> },
+  { path: '/consola-mh', roles: ALL, element: <ConsolaMh /> },
+  { path: '/acerca-simulacion', roles: ALL, element: <AcercaSimulacion /> },
 ];
