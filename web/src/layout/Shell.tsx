@@ -20,14 +20,12 @@ export function Shell() {
   const loc = useLocation();
   // Regla 7 / 10.1-5: el Cajero sin turno abierto tiene la terminal bloqueada.
   const bloqueada = user?.rol === 'CAJERO' && !!caja.data && !turno;
-  const libres = [
-    '/caja/apertura',
-    '/caja/cerrada',
-    '/perfil',
-    '/acerca-simulacion',
-    '/consola-mh',
-  ];
-  const redirigir = bloqueada && !!caja.data?.ultimoCierre && !libres.includes(loc.pathname);
+  // Solo las rutas operativas del Cajero se redirigen; las no permitidas siguen mostrando "Acceso denegado".
+  const operativas = ['/pos', '/dte', '/clientes', '/contingencia', '/correos'];
+  const redirigir =
+    bloqueada &&
+    !!caja.data?.ultimoCierre &&
+    operativas.some((p) => loc.pathname === p || loc.pathname.startsWith(`${p}/`));
   return (
     <RealtimeProvider>
       <ShellCtx.Provider
