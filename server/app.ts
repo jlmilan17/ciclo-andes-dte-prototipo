@@ -4,6 +4,7 @@ import { auditoriaRouter } from './routes/auditoria.js';
 import { authRouter } from './routes/auth.js';
 import { cajaRouter } from './routes/caja.js';
 import { clientesRouter } from './routes/clientes.js';
+import { contingenciaRouter } from './routes/contingencia.js';
 import { dteRouter } from './routes/dte.js';
 import { eventsRouter } from './routes/events.js';
 import { productosRouter } from './routes/productos.js';
@@ -26,6 +27,7 @@ export function createApp() {
   api.use(clientesRouter);
   api.use(cajaRouter);
   api.use(dteRouter);
+  api.use(contingenciaRouter);
   api.use(simRouter);
   api.use(eventsRouter);
   app.use('/api', api);
