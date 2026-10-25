@@ -9,7 +9,9 @@ import { dteRouter } from './routes/dte.js';
 import { eventsRouter } from './routes/events.js';
 import { productosRouter } from './routes/productos.js';
 import { publicConfigRouter } from './routes/publicConfig.js';
+import { resumenRouter } from './routes/resumen.js';
 import { simRouter } from './routes/sim.js';
+import { usuariosRouter } from './routes/usuarios.js';
 
 export function createApp() {
   const app = express();
@@ -28,6 +30,8 @@ export function createApp() {
   api.use(cajaRouter);
   api.use(dteRouter);
   api.use(contingenciaRouter);
+  api.use(usuariosRouter);
+  api.use(resumenRouter);
   api.use(simRouter);
   api.use(eventsRouter);
   app.use('/api', api);
