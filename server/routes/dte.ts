@@ -190,8 +190,10 @@ dteRouter.get('/dte/:id', requireAuth, async (req, res) => {
     .select(['id', 'numero_control', 'estado'])
     .where('corrige_dte_id', '=', d.id)
     .executeTakeFirst();
+  // El JSON completo se sirve aparte en /dte/:id/json; aquí solo lo usa el PDF.
+  const { json_original: _json, ...detalle } = d;
   res.json({
-    ...d,
+    ...detalle,
     eventos,
     invalidacion: invalidacion ?? null,
     invalidable: await evaluarInvalidable(d.id),

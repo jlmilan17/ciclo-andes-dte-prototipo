@@ -20,6 +20,7 @@ export async function loadDte(id: string) {
       'd.estado',
       'd.cliente_id',
       'd.receptor',
+      'd.json_original',
       'd.sello_recepcion',
       'd.fh_procesamiento',
       'd.respuesta_mh',
