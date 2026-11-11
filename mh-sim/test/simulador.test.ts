@@ -231,7 +231,12 @@ describe('consulta pública (ZG-22)', () => {
   it('documento inexistente o con fecha/ambiente que no coincide → 404 controlado', async () => {
     const d = dte('03');
     await recepcion(await envio(d));
-    for (const over of [{ codGen: uuid() }, { fechaEmi: '2000-01-01' }, { ambiente: '01' }]) {
+    const casos: Array<Record<string, string>> = [
+      { codGen: uuid() },
+      { fechaEmi: '2000-01-01' },
+      { ambiente: '01' },
+    ];
+    for (const over of casos) {
       const c = await consulta(d, over);
       expect(c.status).toBe(404);
       expect(c.body.encontrado).toBe(false);
