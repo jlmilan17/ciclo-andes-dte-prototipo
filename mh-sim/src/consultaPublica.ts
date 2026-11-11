@@ -91,6 +91,14 @@ const fechaSv = (iso: string) =>
     timeStyle: 'medium',
   });
 
+/** Valores tipo código: monoespaciados y con corte en cualquier carácter. */
+const CODIGOS = new Set([
+  'Número de control',
+  'Código de generación',
+  'Sello de recepción',
+  'Sello de invalidación',
+]);
+
 function html(r: ResultadoConsulta): string {
   const filas = r.encontrado
     ? [
@@ -122,12 +130,13 @@ h1{font-size:20px;margin:0 0 4px}
 .aviso{background:#FFF4DC;border:1px solid #E3C27A;border-radius:6px;padding:8px 12px;font-size:13px}
 .msg{border-left:4px solid ${color};padding:8px 12px;margin:16px 0;background:#fff}
 dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;background:#fff;padding:12px;border-radius:6px}
-dt{color:#3D4B45;font-size:13px}dd{margin:0;font-family:"Courier New",monospace;word-break:break-all}
+dt{color:#3D4B45;font-size:13px}dd{margin:0;overflow-wrap:anywhere}
+dd.c{font-family:"Courier New",monospace;word-break:break-all}
 </style></head><body><main>
 <h1>Consulta pública de DTE</h1>
 <p class="aviso">${esc(AVISO)}</p>
 <p class="msg">${esc(r.mensaje)}</p>
-<dl>${filas.map(([k, v]) => `<dt>${esc(k!)}</dt><dd>${esc(v!)}</dd>`).join('')}</dl>
+<dl>${filas.map(([k, v]) => `<dt>${esc(k!)}</dt><dd${CODIGOS.has(k!) ? ' class="c"' : ''}>${esc(v!)}</dd>`).join('')}</dl>
 </main></body></html>`;
 }
 
