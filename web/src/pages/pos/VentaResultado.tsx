@@ -145,6 +145,9 @@ export function VentaResultado() {
           <Button variant="secondary" onClick={() => setCorreo(true)}>
             Enviar por correo
           </Button>
+          <Link to="/correos">
+            <Button variant="ghost">Ver correos enviados</Button>
+          </Link>
           <Link to={`/dte/${d.id}`}>
             <Button variant="ghost">Ver detalle del DTE</Button>
           </Link>

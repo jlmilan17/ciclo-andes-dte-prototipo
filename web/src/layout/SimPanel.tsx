@@ -178,6 +178,9 @@ export function SimPanel({ onClose }: { onClose: () => void }) {
         <Link className="text-sello-600 underline" to="/consola-mh" onClick={onClose}>
           Consola del MH
         </Link>
+        <Link className="text-sello-600 underline" to="/correos" onClick={onClose}>
+          Correos enviados (simulado)
+        </Link>
         <Link className="text-sello-600 underline" to="/acerca-simulacion" onClick={onClose}>
           Acerca de la simulación
         </Link>
