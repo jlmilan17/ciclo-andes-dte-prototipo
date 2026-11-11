@@ -190,3 +190,87 @@ describe('modos de conexión', () => {
     expect(Date.now() - t0).toBeGreaterThanOrEqual(380);
   });
 });
+
+describe('consulta pública (ZG-22)', () => {
+  const consulta = (d: ReturnType<typeof dte>, over: Record<string, string> = {}) =>
+    request(app)
+      .get('/mh-sim/consultaPublica')
+      .query({
+        ambiente: d.identificacion.ambiente,
+        codGen: d.identificacion.codigoGeneracion,
+        fechaEmi: d.identificacion.fecEmi,
+        ...over,
+      })
+      .set('accept', 'application/json');
+
+  it('documento procesado → 200 con sello, sin autenticación', async () => {
+    const d = dte('03');
+    const r = await recepcion(await envio(d));
+    const c = await consulta(d); // sin header authorization
+    expect(c.status).toBe(200);
+    expect(c.body).toMatchObject({
+      encontrado: true,
+      estado: 'PROCESADO',
+      sellado: true,
+      invalidado: false,
+      selloRecepcion: r.body.selloRecibido,
+      numeroControl: d.identificacion.numeroControl,
+    });
+    expect(Date.parse(c.body.fhProcesamiento)).not.toBeNaN();
+    expect(c.body.aviso).toMatch(/SIMULADA/);
+  });
+
+  it('documento aún no transmitido (contingencia) → pendiente de procesamiento', async () => {
+    const encolado = dte('01'); // firmado localmente, nunca llegó al MH
+    const c = await consulta(encolado);
+    expect(c.status).toBe(404);
+    expect(c.body.estado).toBe('NO_REGISTRADO');
+    expect(c.body.mensaje).toMatch(/pendiente de procesamiento/);
+  });
+
+  it('documento inexistente o con fecha/ambiente que no coincide → 404 controlado', async () => {
+    const d = dte('03');
+    await recepcion(await envio(d));
+    const casos: Array<Record<string, string>> = [
+      { codGen: uuid() },
+      { fechaEmi: '2000-01-01' },
+      { ambiente: '01' },
+    ];
+    for (const over of casos) {
+      const c = await consulta(d, over);
+      expect(c.status).toBe(404);
+      expect(c.body.encontrado).toBe(false);
+    }
+  });
+
+  it('parámetros faltantes → 400; HTML legible por defecto', async () => {
+    const bad = await request(app).get('/mh-sim/consultaPublica').set('accept', 'application/json');
+    expect(bad.status).toBe(400);
+    const d = dte('03');
+    const r = await recepcion(await envio(d));
+    const h = await request(app).get('/mh-sim/consultaPublica').query({
+      ambiente: '00',
+      codGen: d.identificacion.codigoGeneracion,
+      fechaEmi: d.identificacion.fecEmi,
+    });
+    expect(h.status).toBe(200);
+    expect(h.headers['content-type']).toMatch(/text\/html/);
+    expect(h.text).toContain(r.body.selloRecibido);
+    expect(h.text).toContain('SIMULADA');
+  });
+
+  it('refleja la invalidación y sigue disponible sin conexión', async () => {
+    const d = dte('03');
+    const r = await recepcion(await envio(d));
+    await simDb
+      .updateTable('documento')
+      .set({ estado: 'INVALIDADO' })
+      .where('codigo_generacion', '=', d.identificacion.codigoGeneracion)
+      .execute();
+    await request(app).post('/mh-sim/admin/estado').send({ modo: 'SIN_CONEXION' });
+    const c = await consulta(d);
+    expect(c.status).toBe(200);
+    expect(c.body).toMatchObject({ estado: 'INVALIDADO', invalidado: true });
+    expect(c.body.selloRecepcion).toBe(r.body.selloRecibido);
+  });
+});

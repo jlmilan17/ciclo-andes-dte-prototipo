@@ -37,8 +37,8 @@ Datos de referencia sembrados: `DTE-01-…-005` (hoy, invalidable), `DTE-03-…-
 2. POS: escribir `BIC-URB-0260` + Enter (como un lector), `CAS-URB-0114` + Enter, código de barras `7421000550551` + Enter; subir cada línea a 2 con **+**.
 3. **F4** → "rutas" → Enter: aparece **Retención 1 %** (Gran Contribuyente y gravado > $100). Total **$647.36**.
 4. Mostrar que con _Consumidor final_ el documento pasa a FCFE y desaparece la retención; volver a Rutas.
-5. **F9** → Cobro → **F9** → _Procesando DTE_ (generar JSON → firmar JWS → transmitir) → **Venta confirmada** con banda de sello y tiempo de firma y envío (≤ 3 s).
-6. _Imprimir ticket_ (80 mm), PDF embebido, _Ver detalle del DTE_ → pestañas **JSON** y **Firma**.
+5. **F9** → Cobro → **F9** → _Procesando DTE_ (generar JSON → firmar JWS → transmitir) → **Venta confirmada** con banda de sello y tiempo de firma y envío (≤ 3 s). En el PDF embebido, mostrar el **código QR** junto a la banda de sello y escanearlo (o abrirlo) para ver la consulta pública **simulada** con el sello (ZG-22).
+6. _Imprimir ticket_ (80 mm, con el QR al final), PDF embebido, _Enviar por correo_ → _Ver correos enviados_: el PDF adjunto incluye el QR. _Ver detalle del DTE_ → pestañas **JSON** y **Firma**.
 
 ## F3 · Contingencia ⭐ (5 min)
 

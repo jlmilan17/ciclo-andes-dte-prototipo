@@ -1,6 +1,14 @@
 import type { DteDetalle } from '../dte/repo.js';
 import { EMISOR } from '../dte/emisor.js';
-import { PDFDocument, TIPO_NOMBRE, fecha, money, toBuffer } from './common.js';
+import {
+  PDFDocument,
+  TIPO_NOMBRE,
+  datosRepresentacion,
+  fecha,
+  money,
+  qrDte,
+  toBuffer,
+} from './common.js';
 
 const INK = '#101C18';
 const MUTED = '#3D4B45';
@@ -18,6 +26,10 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
   const r = d.receptor as Record<string, string | null>;
   const provisional = !d.sello_recepcion;
   const W = doc.page.width - 96;
+  const rep = datosRepresentacion(d);
+  const qr = await qrDte(d);
+  const QR = 62; // lado del QR, igual al alto de la banda de sello
+  const BW = qr ? W - QR - 10 : W; // ancho de la banda de sello
 
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(14).text(EMISOR.nombre);
   doc.font('Helvetica').fontSize(9).fillColor(MUTED);
@@ -48,7 +60,7 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
     .dash(3, { space: 3 })
     .lineWidth(1.2)
     .strokeColor(color)
-    .roundedRect(48, y0, W, 62, 6)
+    .roundedRect(48, y0, BW, 62, 6)
     .stroke()
     .restore();
   doc.font('Courier').fontSize(9).fillColor(INK);
@@ -58,7 +70,7 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
       .fillColor(c)
       .font('Courier')
       .fontSize(9)
-      .text(value, 200, y, { width: W - 160 });
+      .text(value, 200, y, { width: BW - 160 });
   };
   row('Número de control', d.numero_control, y0 + 8);
   row('Código de generación', d.codigo_generacion, y0 + 24);
@@ -68,12 +80,31 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
     y0 + 40,
     provisional ? AMBAR : SELLO,
   );
-  doc.y = y0 + 72;
+  if (qr) {
+    // QR hacia la consulta pública del SIMULADOR (ZG-22), junto a la banda de sello.
+    const qx = 48 + W - QR;
+    doc.image(qr, qx, y0, { width: QR, height: QR });
+    doc
+      .font('Helvetica')
+      .fontSize(5.5)
+      .fillColor(MUTED)
+      .text('Consulta pública (simulada)', qx - 10, y0 + QR + 1, {
+        width: QR + 20,
+        align: 'center',
+      });
+  }
+  doc.y = y0 + 74;
   doc.x = 48;
 
   doc.font('Helvetica').fontSize(9).fillColor(MUTED);
   doc.text(
-    `Emisión: ${fecha(d.emitido_at)}    Estado: ${d.estado}${d.fh_procesamiento ? `    Procesado MH: ${fecha(d.fh_procesamiento)}` : ''}`,
+    `Emisión: ${rep.fechaEmision} ${rep.horaEmision}    Estado: ${d.estado}${d.fh_procesamiento ? `    Procesado MH: ${fecha(d.fh_procesamiento)}` : ''}`,
+  );
+  doc.text(
+    `Ambiente: ${rep.ambienteTxt}    Versión del esquema: ${rep.version}    Modelo de facturación: ${rep.modelo}`,
+  );
+  doc.text(
+    `Tipo de transmisión: ${rep.transmision}    Condición de la operación: ${rep.condicion}`,
   );
   if (d.ref_codigo_generacion)
     doc.text(`Documento relacionado: ${d.ref_numero_control} · ${d.ref_codigo_generacion}`);
@@ -94,15 +125,16 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
   doc.moveDown(0.8);
 
   // Líneas
-  const cols = [48, 80, 180, 380, 430, 500];
-  const head = ['#', 'Código', 'Descripción', 'Cant.', 'P. unit.', 'Gravado'];
+  const cols = [48, 72, 160, 340, 385, 440, 500];
+  const head = ['#', 'Código', 'Descripción', 'U. medida', 'Cant.', 'P. unit.', 'Gravado'];
+  const right = (i: number) => i >= 4;
   let y = doc.y;
   doc.rect(48, y - 2, W, 16).fill('#F6F7F4');
   doc.fillColor(MUTED).font('Helvetica-Bold').fontSize(8);
   head.forEach((h, i) =>
     doc.text(h, cols[i]!, y + 2, {
       width: (cols[i + 1] ?? 564) - cols[i]! - 4,
-      align: i >= 3 ? 'right' : 'left',
+      align: right(i) ? 'right' : 'left',
     }),
   );
   y += 18;
@@ -112,15 +144,16 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
       String(l.num_item),
       l.codigo,
       l.descripcion,
+      rep.uniMedida(l.num_item),
       String(l.cantidad),
       money(l.precio_unitario),
       money(l.gravado),
     ];
-    const h = Math.max(14, doc.heightOfString(l.descripcion, { width: 196 }) + 4);
+    const h = Math.max(14, doc.heightOfString(l.descripcion, { width: 176 }) + 4);
     cells.forEach((c, i) =>
       doc.text(c, cols[i]!, y, {
         width: (cols[i + 1] ?? 564) - cols[i]! - 4,
-        align: i >= 3 ? 'right' : 'left',
+        align: right(i) ? 'right' : 'left',
       }),
     );
     y += h;
@@ -146,7 +179,10 @@ export async function dtePdf(d: DteDetalle): Promise<Buffer> {
   tot('IVA 13 %', money(d.iva));
   if (d.retencion) tot('(−) Retención 1 %', `-${money(d.retencion)}`);
   tot('TOTAL A PAGAR', money(d.total), true);
-  doc.font('Helvetica').fontSize(8).fillColor(MUTED);
+  doc.font('Helvetica').fontSize(8).fillColor(INK);
+  doc.text(`Total en letras: ${rep.totalLetras}`, 48, y, { width: W });
+  y = doc.y + 4;
+  doc.fillColor(MUTED);
   if (d.metodo_pago) doc.text(`Forma de pago: ${d.metodo_pago}`, 48, y);
   y += 24;
 

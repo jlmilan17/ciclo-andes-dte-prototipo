@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import express, { type RequestHandler } from 'express';
 import { CODIGOS_RECHAZO, isCodigo } from './codigos.js';
+import { consultaPublica } from './consultaPublica.js';
 import { simDb } from './db.js';
 import { getEstado, setEstado } from './state.js';
 import { anularDocumento, recibirDocumento, registrarRechazo, type Respuesta } from './validate.js';
@@ -89,6 +90,9 @@ export function createSimApp() {
     );
   });
   app.use('/mh-sim/admin', admin);
+
+  // ---- Consulta pública (ZG-22): destino del QR, sin autenticación ni modo de conexión ----
+  app.get('/mh-sim/consultaPublica', consultaPublica);
 
   // ---- Plano de datos (simula el API del MH) ----
   const api = express.Router();

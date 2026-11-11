@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '@/api/client';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -49,7 +50,11 @@ export function EnviarCorreo({
         autoFocus
       />
       <p className="mt-2 text-xs text-pizarra-400">
-        Simulado: el mensaje con el PDF y el JSON adjuntos queda en "Correos enviados".
+        Simulado: el mensaje con el PDF (con su código QR) y el JSON adjuntos queda en{' '}
+        <Link to="/correos" className="text-sello-600 underline" onClick={onClose}>
+          Correos enviados
+        </Link>
+        .
       </p>
     </Modal>
   );

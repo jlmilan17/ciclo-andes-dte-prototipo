@@ -116,6 +116,9 @@ export function DteDetalle() {
           <Button variant="secondary" onClick={() => setModal('correo')}>
             Enviar por correo
           </Button>
+          <Link to="/correos">
+            <Button variant="ghost">Ver correos enviados</Button>
+          </Link>
           {admin && (
             <>
               <Button
