@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api } from '@/api/client';
 import { Card, SectionTitle } from '@/components/Card';
 import { useSimEstado } from '@/layout/ConexionMh';
@@ -36,6 +37,10 @@ const SIMULADO = [
   [
     'Esquema JSON del DTE',
     'Estructura de demostración (ZG-11); no se afirma conformidad con el esquema oficial.',
+  ],
+  [
+    'Consulta pública del DTE (código QR)',
+    'El QR del PDF y del ticket apunta a la consulta pública del simulador (`/mh-sim/consultaPublica`), no a Hacienda. Responde si el documento fue procesado, su sello y si se invalidó; un documento en contingencia aparece como pendiente de procesamiento. El formato de la URL está PENDIENTE DE VALIDAR contra la normativa técnica (ZG-22) y no tiene validez fiscal.',
   ],
   ['Pagos con tarjeta', 'El POS bancario es externo; solo se registra el método de pago.'],
   ['Impresora térmica', 'Vista previa de 80 mm en pantalla y exportación a PDF.'],
@@ -77,6 +82,9 @@ export function AcercaSimulacion() {
               </div>
             ))}
           </dl>
+          <Link to="/correos" className="mt-3 inline-block text-sm text-sello-600 underline">
+            Ver correos enviados (simulado)
+          </Link>
         </Card>
       </div>
 
